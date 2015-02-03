@@ -29,16 +29,21 @@
 	<script src="https://cdn.socket.io/socket.io-1.2.0.js"></script>
 	<script src="http://code.jquery.com/jquery-1.11.1.js"></script>
 	  <script>
+        // functions //
+        function sendMessage(type, message, parentId) {
+          var msgId = 'msg_id_' + Math.floor((1 + Math.random()) * 0x10000);
+          var userMsg = {name: user.name, msg: {id: msgId, content: message, parent: parentId}};
+          socket.emit(type, userMsg);
+        }
+
+        // end functions //
         $('#users').append($('<li>').text('Connected Users:'));
 
         var user = {name: "User " + Math.floor((1 + Math.random()) * 0x10000), uuid: ""};
 	    var socket = io();
         socket.emit('join', user);
-
-	    $('#message_form').submit(function(){
-            var msgId = 'msg_id_' + Math.floor((1 + Math.random()) * 0x10000);
-            var userMsg = {name: user.name, msg: {id: msgId, content: $('#m').val(), parent: ''}};
-	        socket.emit('chat message', userMsg);
+        $('#message_form').submit(function(){
+            sendMessage('chat message', $('#m').val(), '');
 	        $('#m').val('');
 	        return false;
 	    });
@@ -47,30 +52,29 @@
         //          user.uuid = userDetails.id;
         //        });
         socket.on('chat message', function(userMsg){
-            var msgParent = userMsg.msg.parent;
+            var pid = userMsg.msg.parent;
             var msgId = userMsg.msg.id;
 
             //Gen new reply form
-            var replyId = 'msg_id_' + Math.floor((1 + Math.random()) * 0x10000);
-            replyForm = $('<form>').attr('class', "reply_form");
-            replyForm.append($('<input>').attr('id', "r_"+replyId).attr('autocomplete', "off"));
-            replyForm.append($('<button>').text('Reply'));
-            replyForm.submit(function(){
-                var parentId = msgId;
-                var replyInput = $('#r_'+replyId);
-                var userReply = {name: user.name, msg: {id: replyId, content: replyInput.val(), parent: parentId}};
-                socket.emit('chat message', userReply);
-                replyInput.val('');
+            $replyForm = $('<form>').attr('class', "reply_form");
+            $replyForm.append($('<input>').attr('id', "r_" + msgId).attr('autocomplete', "off"));
+            $replyForm.append($('<button>').text('Reply'));
+            $replyForm.attr('pid', pid);
+            $replyForm.attr('id', msgId)
+            $replyForm.submit(function(){
+                sendMessage('reply', $('#r_' + msgId).val(), msgId);
                 return false;
             });
 
-            var msgItem = $('<li>').attr('id', msgId).text(userMsg.name + ": " + userMsg.msg.content).append(replyForm);
-            if (msgParent == '') {
-                $('#messages').append($('<li>')).append($('<ul>')).append(msgItem);
-            } else {
-                $('#' + msgParent).append(msgItem);
-            }
+            var msgItem = $('<li>').append($('<ul>').attr('id', msgId).text(userMsg.name + ": " + userMsg.msg.content).append($replyForm));
+            $('#messages').append(msgItem);
 	    });
+
+        socket.on('reply', function(reply) {
+            $('#' + reply.msg.parent).append($('<li>').attr('id', reply.msg.id).text(reply.name + ": " + reply.msg.content));
+            $('#r_' + reply.msg.parent).val('');
+        });
+
         socket.on('user connected', function(username){
             $('#users').append($('<li>').text(username));
         });

@@ -29,6 +29,10 @@ io.on('connection', function(socket){
     io.emit('chat message', userMsg);
   });
 
+  socket.on('reply', function(reply){
+    io.emit('reply', reply);
+  });
+
 });
 
 
