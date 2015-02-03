@@ -3,7 +3,6 @@ var http = require('http').Server(app);
 var io = require('socket.io')(http);
 var uuidGen = require('uuid');
 var users = {};
-var port = process.env.PORT || 5000;
 
 app.get('/', function(req, res){
   res.sendfile('index.html');
@@ -37,6 +36,6 @@ io.on('connection', function(socket){
 
 
 
-http.listen(port, function(){
-  console.log('listening on *:' + port);
+http.listen(3000, function(){
+  console.log('listening on *:3000');
 });
